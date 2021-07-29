@@ -34,6 +34,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <functional>
+#include <iostream>
 #include <map>
 #include <memory>
 #include <string>
@@ -78,9 +79,7 @@ private:
   std::map<uint64_t, std::string> GlobalAddressReverseMap;
 
 public:
-  GlobalAddressMapTy &getGlobalAddressMap() {
-    return GlobalAddressMap;
-  }
+  GlobalAddressMapTy &getGlobalAddressMap() { return GlobalAddressMap; }
 
   std::map<uint64_t, std::string> &getGlobalAddressReverseMap() {
     return GlobalAddressReverseMap;
@@ -126,7 +125,7 @@ class ExecutionEngine {
   /// Whether the JIT should verify IR modules during compilation.
   bool VerifyModules;
 
-  friend class EngineBuilder;  // To allow access to JITCtor and InterpCtor.
+  friend class EngineBuilder; // To allow access to JITCtor and InterpCtor.
 
 protected:
   /// The list of Modules that we are JIT'ing from.  We use a SmallVector to
@@ -204,15 +203,16 @@ public:
   //        fixed by deleting ExecutionEngine.
   virtual bool removeModule(Module *M);
 
-  /// FindFunctionNamed - Search all of the active modules to find the function that
-  /// defines FnName.  This is very slow operation and shouldn't be used for
-  /// general code.
+  /// FindFunctionNamed - Search all of the active modules to find the function
+  /// that defines FnName.  This is very slow operation and shouldn't be used
+  /// for general code.
   virtual Function *FindFunctionNamed(StringRef FnName);
 
-  /// FindGlobalVariableNamed - Search all of the active modules to find the global variable
-  /// that defines Name.  This is very slow operation and shouldn't be used for
-  /// general code.
-  virtual GlobalVariable *FindGlobalVariableNamed(StringRef Name, bool AllowInternal = false);
+  /// FindGlobalVariableNamed - Search all of the active modules to find the
+  /// global variable that defines Name.  This is very slow operation and
+  /// shouldn't be used for general code.
+  virtual GlobalVariable *FindGlobalVariableNamed(StringRef Name,
+                                                  bool AllowInternal = false);
 
   /// runFunction - Execute the specified function with the specified arguments,
   /// and return the result.
@@ -298,13 +298,11 @@ public:
   /// \param isDtors - Run the destructors instead of constructors.
   void runStaticConstructorsDestructors(Module &module, bool isDtors);
 
-
   /// runFunctionAsMain - This is a helper function which wraps runFunction to
   /// handle the common task of starting up main with the specified argc, argv,
   /// and envp parameters.
   int runFunctionAsMain(Function *Fn, const std::vector<std::string> &argv,
-                        const char * const * envp);
-
+                        const char *const *envp);
 
   /// addGlobalMapping - Tell the execution engine that the specified global is
   /// at the specified location.  This is used internally as functions are JIT'd
@@ -397,8 +395,7 @@ public:
   /// Ptr is the address of the memory at which to store Val, cast to
   /// GenericValue *.  It is not a pointer to a GenericValue containing the
   /// address at which to store Val.
-  void StoreValueToMemory(const GenericValue &Val, GenericValue *Ptr,
-                          Type *Ty);
+  void StoreValueToMemory(const GenericValue &Val, GenericValue *Ptr, Type *Ty);
 
   void InitializeMemory(const Constant *Init, void *Addr);
 
@@ -459,9 +456,7 @@ public:
   void DisableLazyCompilation(bool Disabled = true) {
     CompilingLazily = !Disabled;
   }
-  bool isCompilingLazily() const {
-    return CompilingLazily;
-  }
+  bool isCompilingLazily() const { return CompilingLazily; }
 
   /// DisableGVCompilation - If called, the JIT will abort if it's asked to
   /// allocate space and populate a GlobalVariable that is not internal to
@@ -469,9 +464,7 @@ public:
   void DisableGVCompilation(bool Disabled = true) {
     GVCompilationDisabled = Disabled;
   }
-  bool isGVCompilationDisabled() const {
-    return GVCompilationDisabled;
-  }
+  bool isGVCompilationDisabled() const { return GVCompilationDisabled; }
 
   /// DisableSymbolSearching - If called, the JIT will not try to lookup unknown
   /// symbols with dlsym.  A client can still use InstallLazyFunctionCreator to
@@ -479,18 +472,16 @@ public:
   void DisableSymbolSearching(bool Disabled = true) {
     SymbolSearchingDisabled = Disabled;
   }
-  bool isSymbolSearchingDisabled() const {
-    return SymbolSearchingDisabled;
-  }
+  bool isSymbolSearchingDisabled() const { return SymbolSearchingDisabled; }
 
   /// Enable/Disable IR module verification.
   ///
   /// Note: Module verification is enabled by default in Debug builds, and
   /// disabled by default in Release. Use this method to override the default.
-  void setVerifyModules(bool Verify) {
-    VerifyModules = Verify;
-  }
+  void setVerifyModules(bool Verify) { VerifyModules = Verify; }
   bool getVerifyModules() const {
+    std::cout << "ExecutionEngine::getVerifyModules: " << VerifyModules
+              << std::endl;
     return VerifyModules;
   }
 
@@ -511,8 +502,7 @@ protected:
   void emitGlobalVariable(const GlobalVariable *GV);
 
   GenericValue getConstantValue(const Constant *C);
-  void LoadValueFromMemory(GenericValue &Result, GenericValue *Ptr,
-                           Type *Ty);
+  void LoadValueFromMemory(GenericValue &Result, GenericValue *Ptr, Type *Ty);
 
 private:
   void Init(std::unique_ptr<Module> M);
@@ -520,12 +510,9 @@ private:
 
 namespace EngineKind {
 
-  // These are actually bitmasks that get or-ed together.
-  enum Kind {
-    JIT         = 0x1,
-    Interpreter = 0x2
-  };
-  const static Kind Either = (Kind)(JIT | Interpreter);
+// These are actually bitmasks that get or-ed together.
+enum Kind { JIT = 0x1, Interpreter = 0x2 };
+const static Kind Either = (Kind)(JIT | Interpreter);
 
 } // end namespace EngineKind
 
@@ -568,14 +555,14 @@ public:
 
   /// setMCJITMemoryManager - Sets the MCJIT memory manager to use. This allows
   /// clients to customize their memory allocation policies for the MCJIT. This
-  /// is only appropriate for the MCJIT; setting this and configuring the builder
-  /// to create anything other than MCJIT will cause a runtime error. If create()
-  /// is called and is successful, the created engine takes ownership of the
-  /// memory manager. This option defaults to NULL.
-  EngineBuilder &setMCJITMemoryManager(std::unique_ptr<RTDyldMemoryManager> mcjmm);
+  /// is only appropriate for the MCJIT; setting this and configuring the
+  /// builder to create anything other than MCJIT will cause a runtime error. If
+  /// create() is called and is successful, the created engine takes ownership
+  /// of the memory manager. This option defaults to NULL.
+  EngineBuilder &
+  setMCJITMemoryManager(std::unique_ptr<RTDyldMemoryManager> mcjmm);
 
-  EngineBuilder&
-  setMemoryManager(std::unique_ptr<MCJITMemoryManager> MM);
+  EngineBuilder &setMemoryManager(std::unique_ptr<MCJITMemoryManager> MM);
 
   EngineBuilder &setSymbolResolver(std::unique_ptr<LegacyJITSymbolResolver> SR);
 
@@ -635,29 +622,24 @@ public:
   }
 
   /// setMAttrs - Set cpu-specific attributes.
-  template<typename StringSequence>
+  template <typename StringSequence>
   EngineBuilder &setMAttrs(const StringSequence &mattrs) {
     MAttrs.clear();
     MAttrs.append(mattrs.begin(), mattrs.end());
     return *this;
   }
 
-  void setEmulatedTLS(bool EmulatedTLS) {
-    this->EmulatedTLS = EmulatedTLS;
-  }
+  void setEmulatedTLS(bool EmulatedTLS) { this->EmulatedTLS = EmulatedTLS; }
 
   TargetMachine *selectTarget();
 
   /// selectTarget - Pick a target either via -march or by guessing the native
   /// arch.  Add any CPU features specified via -mcpu or -mattr.
-  TargetMachine *selectTarget(const Triple &TargetTriple,
-                              StringRef MArch,
+  TargetMachine *selectTarget(const Triple &TargetTriple, StringRef MArch,
                               StringRef MCPU,
-                              const SmallVectorImpl<std::string>& MAttrs);
+                              const SmallVectorImpl<std::string> &MAttrs);
 
-  ExecutionEngine *create() {
-    return create(selectTarget());
-  }
+  ExecutionEngine *create() { return create(selectTarget()); }
 
   ExecutionEngine *create(TargetMachine *TM);
 };

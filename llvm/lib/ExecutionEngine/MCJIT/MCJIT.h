@@ -14,6 +14,7 @@
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/ExecutionEngine/RTDyldMemoryManager.h"
 #include "llvm/ExecutionEngine/RuntimeDyld.h"
+#include <iostream>
 
 namespace llvm {
 class MCJIT;
@@ -72,8 +73,7 @@ class MCJIT : public ExecutionEngine {
 
   class OwningModuleContainer {
   public:
-    OwningModuleContainer() {
-    }
+    OwningModuleContainer() {}
     ~OwningModuleContainer() {
       freeModulePtrSet(AddedModules);
       freeModulePtrSet(LoadedModules);
@@ -89,7 +89,9 @@ class MCJIT : public ExecutionEngine {
     ModulePtrSet::iterator begin_loaded() { return LoadedModules.begin(); }
     ModulePtrSet::iterator end_loaded() { return LoadedModules.end(); }
 
-    ModulePtrSet::iterator begin_finalized() { return FinalizedModules.begin(); }
+    ModulePtrSet::iterator begin_finalized() {
+      return FinalizedModules.begin();
+    }
     ModulePtrSet::iterator end_finalized() { return FinalizedModules.end(); }
 
     void addModule(std::unique_ptr<Module> M) {
@@ -115,7 +117,7 @@ class MCJIT : public ExecutionEngine {
       return FinalizedModules.contains(M);
     }
 
-    bool ownsModule(Module* M) {
+    bool ownsModule(Module *M) {
       return AddedModules.contains(M) || LoadedModules.contains(M) ||
              FinalizedModules.contains(M);
     }
@@ -165,7 +167,7 @@ class MCJIT : public ExecutionEngine {
     ModulePtrSet LoadedModules;
     ModulePtrSet FinalizedModules;
 
-    void freeModulePtrSet(ModulePtrSet& MPS) {
+    void freeModulePtrSet(ModulePtrSet &MPS) {
       // Go through the module set and delete everything.
       for (ModulePtrSet::iterator I = MPS.begin(), E = MPS.end(); I != E; ++I) {
         Module *M = *I;
@@ -180,7 +182,7 @@ class MCJIT : public ExecutionEngine {
   std::shared_ptr<MCJITMemoryManager> MemMgr;
   LinkingSymbolResolver Resolver;
   RuntimeDyld Dyld;
-  std::vector<JITEventListener*> EventListeners;
+  std::vector<JITEventListener *> EventListeners;
 
   OwningModuleContainer OwnedModules;
 
@@ -197,10 +199,10 @@ class MCJIT : public ExecutionEngine {
                                             ModulePtrSet::iterator I,
                                             ModulePtrSet::iterator E);
 
-  GlobalVariable *FindGlobalVariableNamedInModulePtrSet(StringRef Name,
-                                                        bool AllowInternal,
-                                                        ModulePtrSet::iterator I,
-                                                        ModulePtrSet::iterator E);
+  GlobalVariable *
+  FindGlobalVariableNamedInModulePtrSet(StringRef Name, bool AllowInternal,
+                                        ModulePtrSet::iterator I,
+                                        ModulePtrSet::iterator E);
 
   void runStaticConstructorsDestructorsInModulePtrSet(bool isDtors,
                                                       ModulePtrSet::iterator I,
@@ -217,9 +219,9 @@ public:
   void addArchive(object::OwningBinary<object::Archive> O) override;
   bool removeModule(Module *M) override;
 
-  /// FindFunctionNamed - Search all of the active modules to find the function that
-  /// defines FnName.  This is very slow operation and shouldn't be used for
-  /// general code.
+  /// FindFunctionNamed - Search all of the active modules to find the function
+  /// that defines FnName.  This is very slow operation and shouldn't be used
+  /// for general code.
   Function *FindFunctionNamed(StringRef FnName) override;
 
   /// FindGlobalVariableNamed - Search all of the active modules to find the
@@ -296,6 +298,7 @@ public:
   /// @{
 
   static void Register() {
+    std::cout << "MCJIT::Register" << std::endl;
     MCJITCtor = createJIT;
   }
 
@@ -318,8 +321,7 @@ public:
   //
   // getSymbolAddress takes an unmangled name and returns the corresponding
   // JITSymbol if a definition of the name has been added to the JIT.
-  uint64_t getSymbolAddress(const std::string &Name,
-                            bool CheckFunctionsOnly);
+  uint64_t getSymbolAddress(const std::string &Name, bool CheckFunctionsOnly);
 
 protected:
   /// emitObject -- Generate a JITed object in memory from the specified module
@@ -337,6 +339,6 @@ protected:
   Module *findModuleForSymbol(const std::string &Name, bool CheckFunctionsOnly);
 };
 
-} // end llvm namespace
+} // namespace llvm
 
 #endif // LLVM_LIB_EXECUTIONENGINE_MCJIT_MCJIT_H

@@ -32,11 +32,13 @@
 #include "llvm/Target/TargetLoweringObjectFile.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
+#include <iostream>
 using namespace llvm;
 
-static cl::opt<bool> EnableTrapUnreachable("trap-unreachable",
-  cl::Hidden, cl::ZeroOrMore, cl::init(false),
-  cl::desc("Enable generating trap for unreachable"));
+static cl::opt<bool>
+    EnableTrapUnreachable("trap-unreachable", cl::Hidden, cl::ZeroOrMore,
+                          cl::init(false),
+                          cl::desc("Enable generating trap for unreachable"));
 
 void LLVMTargetMachine::initAsmInfo() {
   MRI.reset(TheTarget.createMCRegInfo(getTargetTriple().str()));
@@ -58,8 +60,8 @@ void LLVMTargetMachine::initAsmInfo() {
   // we'll crash later.
   // Provide the user with a useful error message about what's wrong.
   assert(TmpAsmInfo && "MCAsmInfo not initialized. "
-         "Make sure you include the correct TargetSelect.h"
-         "and that InitializeAllTargetMCs() is being invoked!");
+                       "Make sure you include the correct TargetSelect.h"
+                       "and that InitializeAllTargetMCs() is being invoked!");
 
   if (Options.BinutilsVersion.first > 0)
     TmpAsmInfo->setBinutilsVersion(Options.BinutilsVersion);
@@ -238,45 +240,84 @@ bool LLVMTargetMachine::addPassesToEmitFile(
 bool LLVMTargetMachine::addPassesToEmitMC(PassManagerBase &PM, MCContext *&Ctx,
                                           raw_pwrite_stream &Out,
                                           bool DisableVerify) {
+  std::cout << "LLVMTargetMachine::addPassesToEmitMC 1" << std::endl;
   // Add common CodeGen passes.
   MachineModuleInfoWrapperPass *MMIWP = new MachineModuleInfoWrapperPass(this);
+  std::cout << "LLVMTargetMachine::addPassesToEmitMC 2" << std::endl;
   TargetPassConfig *PassConfig =
       addPassesToGenerateCode(*this, PM, DisableVerify, *MMIWP);
+  std::cout << "LLVMTargetMachine::addPassesToEmitMC 3" << std::endl;
   if (!PassConfig)
     return true;
+  std::cout << "LLVMTargetMachine::addPassesToEmitMC 4" << std::endl;
   assert(TargetPassConfig::willCompleteCodeGenPipeline() &&
          "Cannot emit MC with limited codegen pipeline");
 
+  std::cout << "LLVMTargetMachine::addPassesToEmitMC 5" << std::endl;
+
   Ctx = &MMIWP->getMMI().getContext();
+
+  std::cout << "LLVMTargetMachine::addPassesToEmitMC 6" << std::endl;
+
   if (Options.MCOptions.MCSaveTempLabels)
     Ctx->setAllowTemporaryLabels(false);
+
+  std::cout << "LLVMTargetMachine::addPassesToEmitMC 7" << std::endl;
 
   // Create the code emitter for the target if it exists.  If not, .o file
   // emission fails.
   const MCSubtargetInfo &STI = *getMCSubtargetInfo();
+
+  std::cout << "LLVMTargetMachine::addPassesToEmitMC 8" << std::endl;
   const MCRegisterInfo &MRI = *getMCRegisterInfo();
+
+  std::cout << "LLVMTargetMachine::addPassesToEmitMC 9" << std::endl;
+
   MCCodeEmitter *MCE =
       getTarget().createMCCodeEmitter(*getMCInstrInfo(), MRI, *Ctx);
+
+  std::cout << "LLVMTargetMachine::addPassesToEmitMC 10" << std::endl;
+
   MCAsmBackend *MAB =
       getTarget().createMCAsmBackend(STI, MRI, Options.MCOptions);
+
+  std::cout << "LLVMTargetMachine::addPassesToEmitMC 11" << std::endl;
+
   if (!MCE || !MAB)
     return true;
 
+  std::cout << "LLVMTargetMachine::addPassesToEmitMC 12" << std::endl;
+
   const Triple &T = getTargetTriple();
+
+  std::cout << "LLVMTargetMachine::addPassesToEmitMC 13" << std::endl;
+
   std::unique_ptr<MCStreamer> AsmStreamer(getTarget().createMCObjectStreamer(
       T, *Ctx, std::unique_ptr<MCAsmBackend>(MAB), MAB->createObjectWriter(Out),
       std::unique_ptr<MCCodeEmitter>(MCE), STI, Options.MCOptions.MCRelaxAll,
       Options.MCOptions.MCIncrementalLinkerCompatible,
       /*DWARFMustBeAtTheEnd*/ true));
 
+  std::cout << "LLVMTargetMachine::addPassesToEmitMC 14" << std::endl;
+
   // Create the AsmPrinter, which takes ownership of AsmStreamer if successful.
   FunctionPass *Printer =
       getTarget().createAsmPrinter(*this, std::move(AsmStreamer));
+
+  std::cout << "LLVMTargetMachine::addPassesToEmitMC 15" << std::endl;
+
   if (!Printer)
     return true;
 
+  std::cout << "LLVMTargetMachine::addPassesToEmitMC 16" << std::endl;
+
   PM.add(Printer);
+
+  std::cout << "LLVMTargetMachine::addPassesToEmitMC 17" << std::endl;
+
   PM.add(createFreeMachineFunctionPass());
+
+  std::cout << "LLVMTargetMachine::addPassesToEmitMC 18" << std::endl;
 
   return false; // success!
 }

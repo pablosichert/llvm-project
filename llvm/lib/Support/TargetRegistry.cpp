@@ -11,6 +11,7 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/raw_ostream.h"
 #include <cassert>
+#include <iostream>
 #include <vector>
 using namespace llvm;
 
@@ -62,6 +63,7 @@ const Target *TargetRegistry::lookupTarget(const std::string &ArchName,
 const Target *TargetRegistry::lookupTarget(const std::string &TT,
                                            std::string &Error) {
   // Provide special warning when no targets are initialized.
+  std::cout << "TargetRegistry::lookupTarget " << TT << std::endl;
   if (targets().begin() == targets().end()) {
     Error = "Unable to find target for this triple (no targets are registered)";
     return nullptr;

@@ -30,6 +30,7 @@
 #include <cassert>
 #include <cstdint>
 #include <cstring>
+#include <iostream>
 #include <system_error>
 
 #define DEBUG_TYPE "wasm-object"
@@ -259,11 +260,13 @@ static Error readSection(WasmSection &Section, WasmObjectFile::ReadContext &Ctx,
 
 WasmObjectFile::WasmObjectFile(MemoryBufferRef Buffer, Error &Err)
     : ObjectFile(Binary::ID_Wasm, Buffer) {
+  std::cout << "WasmObjectFile::WasmObjectFile 1" << std::endl;
   ErrorAsOutParameter ErrAsOutParam(&Err);
   Header.Magic = getData().substr(0, 4);
   if (Header.Magic != StringRef("\0asm", 4)) {
     Err = make_error<StringError>("invalid magic number",
                                   object_error::parse_failed);
+    std::cout << "WasmObjectFile::WasmObjectFile 1.1" << std::endl;
     return;
   }
 
@@ -272,11 +275,15 @@ WasmObjectFile::WasmObjectFile(MemoryBufferRef Buffer, Error &Err)
   Ctx.Ptr = Ctx.Start + 4;
   Ctx.End = Ctx.Start + getData().size();
 
+  std::cout << "WasmObjectFile::WasmObjectFile 2" << std::endl;
+
   if (Ctx.Ptr + 4 > Ctx.End) {
     Err = make_error<StringError>("missing version number",
                                   object_error::parse_failed);
     return;
   }
+
+  std::cout << "WasmObjectFile::WasmObjectFile 3" << std::endl;
 
   Header.Version = readUint32(Ctx);
   if (Header.Version != wasm::WasmVersion) {
@@ -285,6 +292,8 @@ WasmObjectFile::WasmObjectFile(MemoryBufferRef Buffer, Error &Err)
                                   object_error::parse_failed);
     return;
   }
+
+  std::cout << "WasmObjectFile::WasmObjectFile 4" << std::endl;
 
   WasmSection Sec;
   WasmSectionOrderChecker Checker;
@@ -296,6 +305,8 @@ WasmObjectFile::WasmObjectFile(MemoryBufferRef Buffer, Error &Err)
 
     Sections.push_back(Sec);
   }
+
+  std::cout << "WasmObjectFile::WasmObjectFile 5" << std::endl;
 }
 
 Error WasmObjectFile::parseSection(WasmSection &Sec) {
@@ -339,7 +350,8 @@ Error WasmObjectFile::parseSection(WasmSection &Sec) {
 }
 
 Error WasmObjectFile::parseDylinkSection(ReadContext &Ctx) {
-  // See https://github.com/WebAssembly/tool-conventions/blob/master/DynamicLinking.md
+  // See
+  // https://github.com/WebAssembly/tool-conventions/blob/master/DynamicLinking.md
   HasDylinkSection = true;
   DylinkInfo.MemorySize = readVaruint32(Ctx);
   DylinkInfo.MemoryAlignment = readVaruint32(Ctx);
@@ -1309,7 +1321,7 @@ Error WasmObjectFile::parseCodeSection(ReadContext &Ctx) {
   }
 
   for (uint32_t i = 0; i < FunctionCount; i++) {
-    wasm::WasmFunction& Function = Functions[i];
+    wasm::WasmFunction &Function = Functions[i];
     const uint8_t *FunctionStart = Ctx.Ptr;
     uint32_t Size = readVaruint32(Ctx);
     const uint8_t *FunctionEnd = Ctx.Ptr + Size;
