@@ -25,6 +25,7 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/SmallVectorMemoryBuffer.h"
+#include <fstream>
 #include <mutex>
 
 using namespace llvm;
@@ -45,11 +46,6 @@ MCJIT::createJIT(std::unique_ptr<Module> M, std::string *ErrorStr,
                  std::shared_ptr<MCJITMemoryManager> MemMgr,
                  std::shared_ptr<LegacyJITSymbolResolver> Resolver,
                  std::unique_ptr<TargetMachine> TM) {
-  // Try to register the program as a source of symbols to resolve against.
-  //
-  // FIXME: Don't do this here.
-  sys::DynamicLibrary::LoadLibraryPermanently(nullptr, nullptr);
-
   if (!MemMgr || !Resolver) {
     auto RTDyldMM = std::make_shared<SectionMemoryManager>();
     if (!MemMgr)
@@ -221,13 +217,12 @@ void MCJIT::generateCodeForModule(Module *M) {
     OS.flush();
     report_fatal_error(Buf);
   }
-  std::unique_ptr<RuntimeDyld::LoadedObjectInfo> L =
-    Dyld.loadObject(*LoadedObject.get());
 
-  if (Dyld.hasError())
-    report_fatal_error(Dyld.getErrorString());
-
-  notifyObjectLoaded(*LoadedObject.get(), *L);
+  auto data = LoadedObject.get()->getData();
+  auto wasmFile = std::ofstream();
+  wasmFile.open("/jit.wasm");
+  wasmFile.write(data.data(), data.size());
+  wasmFile.close();
 
   Buffers.push_back(std::move(ObjectToLoad));
   LoadedObjects.push_back(std::move(*LoadedObject));

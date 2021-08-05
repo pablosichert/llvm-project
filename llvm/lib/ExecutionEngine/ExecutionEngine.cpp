@@ -506,11 +506,6 @@ EngineBuilder::setSymbolResolver(std::unique_ptr<LegacyJITSymbolResolver> SR) {
 ExecutionEngine *EngineBuilder::create(TargetMachine *TM) {
   std::unique_ptr<TargetMachine> TheTM(TM); // Take ownership.
 
-  // Make sure we can resolve symbols in the program as well. The zero arg
-  // to the function tells DynamicLibrary to load the program, not a library.
-  if (sys::DynamicLibrary::LoadLibraryPermanently(nullptr, ErrorStr))
-    return nullptr;
-
   // If the user specified a memory manager but didn't specify which engine to
   // create, we assume they only want the JIT, and we fail if they only want
   // the interpreter.
